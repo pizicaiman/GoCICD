@@ -1,18 +1,25 @@
 FROM golang:1.20.1 AS builder
-MAINTAINER CJF
+
+LABEL stage=gobuilder
+
+ENV CGO_ENABLED 0
+ENV GOPROXY https://goproxy.cn,direct
+
+WORKDIR /build
+
+ADD go.mod .
+ADD go.sum .
+RUN go mod download
+COPY . .
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /app/main ./main.go
+
+FROM alpine
+
+ENV TZ Asia/Shanghai
 
 WORKDIR /app
+COPY --from=builder /app/main /app/main
 
-COPY . .
+RUN chmod +x /app/main
 
-ARG TARGETOS
-ARG TARGETARCH
-
-RUN --mount=type=cache,target=/go --mount=type=cache,target=/root/.cache/go-build \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o main
-
-FROM alpine:3.14.0
-
-COPY --from=builder /app/main /app
-
-ENTRYPOINT ["/app/main"]
+CMD ["./main"]
