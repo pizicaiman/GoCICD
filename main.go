@@ -1,4 +1,4 @@
-package testGo
+package main
 
 import (
 	"github.com/gin-gonic/gin"
